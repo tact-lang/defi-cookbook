@@ -1,0 +1,34 @@
+{
+    "projects": [
+        {
+            "name": "Jetton",
+            "path": "./jettons/impl/jetton-minter.tact",
+            "output": "./jettons/output",
+            "mode": "full",
+            "options": {
+                "external": false,
+                "debug": false,
+                "ipfsAbiGetter": false,
+                "interfacesGetter": false,
+                "experimental": {
+                    "inline": true
+                }
+            }
+        },
+        {
+            "name": "JettonReceiver",
+            "path": "./jettons/receive-jettons/receiver.tact",
+            "output": "./jettons/output",
+            "mode": "full",
+            "options": {
+                "external": false,
+                "debug": false,
+                "ipfsAbiGetter": false,
+                "interfacesGetter": false,
+                "experimental": {
+                    "inline": true
+                }
+            }
+        }
+    ]
+}
