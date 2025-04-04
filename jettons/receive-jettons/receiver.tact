@@ -1,7 +1,19 @@
 import "../impl/messages.tact";
 
-struct TactJettonWalletStorage {
-    balance: Int as coins;
+/// Struct that represents Tact Jetton Wallet state init. It's used to calculate the address of the Jetton Wallet
+///
+/// Different Jettons implementations may have different state init structures. For example, Governance Jetton Wallet (USDT)
+/// has this:
+/// ```tact
+/// struct GovernanceJettonWalletStateInit {
+///     status: Int as uint4 = 0,
+///     balance: Int as coins = 0,
+///     owner: Address,
+///     master: Address,
+/// }
+/// ```
+struct TactJettonWalletStateInit {
+    balance: Int as coins = 0;
     owner: Address;
     minter: Address;
 }
@@ -12,16 +24,15 @@ contract JettonReceiver(
     amountChecker: Int as coins,
     payloadChecker: Slice,
 ) {
-    inline fun createJettonWalletInitData(owner: Address): Cell {
-        return TactJettonWalletStorage {
-            balance: 0,
+    inline fun getTactJettonWalletStateInit(owner: Address): Cell {
+        return TactJettonWalletStateInit {
             owner,
             minter: self.minterAddress,
         }.toCell();
     }
 
     inline fun calculateJettonWalletAddress(owner: Address): Address {
-        let initData = self.createJettonWalletInitData(owner);
+        let initData = self.getTactJettonWalletStateInit(owner);
         return contractAddress(StateInit { code: self.jettonWalletCode, data: initData });
     }
 
