@@ -7,7 +7,11 @@ import {
     JettonUpdateContent,
     Mint,
 } from "../output/Jetton_JettonMinter"
-import {JettonReceiver} from "../output/JettonReceiver_JettonReceiver"
+import {
+    JettonNotification,
+    JettonReceiver,
+    storeJettonNotification,
+} from "../output/JettonReceiver_JettonReceiver"
 import {JettonWallet} from "../output/Jetton_JettonWallet"
 
 describe("Jetton Receiver Tests", () => {
@@ -34,6 +38,7 @@ describe("Jetton Receiver Tests", () => {
             content: new Cell(),
         }
 
+        // deploy jetton minter
         jettonMinter = blockchain.openContract(
             await JettonMinter.fromInit(0n, deployer.address, defaultContent, true),
         )
@@ -50,10 +55,13 @@ describe("Jetton Receiver Tests", () => {
             success: true,
         })
 
+        // quick setup to get jetton wallet code and reuse later
         const jettonWallet = blockchain.openContract(
             await JettonWallet.fromInit(0n, deployer.address, jettonMinter.address),
         )
         jettonWalletCode = jettonWallet.init!.code
+
+        // deploy jetton receiver contract
         jettonReceiverContract = blockchain.openContract(
             await JettonReceiver.fromInit(
                 jettonMinter.address,
@@ -76,6 +84,7 @@ describe("Jetton Receiver Tests", () => {
             success: true,
         })
 
+        // mint jettons to deployer address as part of the setup
         const mintMsg: Mint = {
             $$type: "Mint",
             queryId: 0n,
@@ -140,6 +149,8 @@ describe("Jetton Receiver Tests", () => {
             transferMsg,
         )
 
+        // check that jetton transfer was successful
+        // and notification message was sent to receiver contract
         expect(transferResult.transactions).toHaveTransaction({
             from: deployerJettonWallet.address,
             to: receiverJettonWallet.address,
@@ -150,7 +161,7 @@ describe("Jetton Receiver Tests", () => {
             deploy: true,
         })
 
-        // Notification message to receiver.tact contract,
+        // notification message to receiver.tact contract, handled by our receiver contract logic
         expect(transferResult.transactions).toHaveTransaction({
             from: receiverJettonWallet.address,
             to: jettonReceiverContract.address,
@@ -168,34 +179,37 @@ describe("Jetton Receiver Tests", () => {
         expect(getPayload).toEqualSlice(jettonTransferForwardPayload.asSlice())
     })
 
-    // it("jetton receiver should reject malicious transfer notification", async () => {
-    //     const msg: JettonNotification = {
-    //         $$type: "JettonNotification",
-    //         queryId: 0n,
-    //         amount: toNano(1),
-    //         forwardPayload: beginCell().storeUint(239, 32).asSlice(),
-    //         sender: deployer.address,
-    //     }
+    it("jetton receiver should reject malicious transfer notification", async () => {
+        // try to send malicious notification message
+        const msg: JettonNotification = {
+            $$type: "JettonNotification",
+            queryId: 0n,
+            amount: toNano(1),
+            forwardPayload: beginCell().storeUint(239, 32).asSlice(),
+            sender: deployer.address,
+        }
 
-    //     const msgCell = beginCell().store(storeJettonNotification(msg)).endCell()
+        const msgCell = beginCell().store(storeJettonNotification(msg)).endCell()
 
-    //     const maliciousSendResult = await deployer.send({
-    //         to: jettonReceiverTester.address,
-    //         value: toNano(1),
-    //         body: msgCell,
-    //     })
+        // no actual jetton transfer, just send notification message
+        const maliciousSendResult = await deployer.send({
+            to: jettonReceiverContract.address,
+            value: toNano(1),
+            body: msgCell,
+        })
 
-    //     expect(maliciousSendResult.transactions).toHaveTransaction({
-    //         from: deployer.address,
-    //         to: jettonReceiverTester.address,
-    //         success: false,
-    //         exitCode: JettonTester.errors["Incorrect sender"],
-    //     })
+        expect(maliciousSendResult.transactions).toHaveTransaction({
+            from: deployer.address,
+            to: jettonReceiverContract.address,
+            // should be rejected
+            success: false,
+            exitCode: JettonReceiver.errors["Incorrect sender"],
+        })
 
-    //     const getAmount = await jettonReceiverTester.getAmount()
-    //     expect(getAmount).toEqual(0n)
+        const getAmount = await jettonReceiverContract.getAmountChecker()
+        expect(getAmount).toEqual(0n)
 
-    //     const getPayload = await jettonReceiverTester.getPayload()
-    //     expect(getPayload).toEqualSlice(beginCell().asSlice())
-    // })
+        const getPayload = await jettonReceiverContract.getPayloadChecker()
+        expect(getPayload).toEqualSlice(beginCell().asSlice())
+    })
 })
