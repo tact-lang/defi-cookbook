@@ -1,4 +1,4 @@
-import {Address, beginCell, storeStateInit} from "@ton/core"
+import {Address, beginCell, storeStateInit, toNano} from "@ton/core"
 import {GovernanceJettonMinter, storeMint} from "../output/Governance Jetton_GovernanceJettonMinter"
 import {buildOnchainMetadata, Metadata} from "./metadata"
 
@@ -11,8 +11,8 @@ async function buildJettonMinterFromEnv(deployerAddress: Address, metadata: Meta
 }
 
 type MintParameters = {
-    jettonMintAmount: bigint
-    deployValueAmount: bigint
+    jettonMintAmount: string
+    deployValueAmount: string
 }
 
 // This function doesn't actually send anything, it just prepares the message
@@ -39,7 +39,7 @@ export const getMintTransaction = async (
                 masterMsg: {
                     $$type: "JettonTransferInternal",
                     queryId: 0n,
-                    amount: mintParameters.jettonMintAmount,
+                    amount: toNano(mintParameters.jettonMintAmount),
                     sender: deployerAddress,
                     responseDestination: deployerAddress,
                     forwardTonAmount: 0n,
@@ -57,7 +57,7 @@ export const getMintTransaction = async (
     }
 
     const stateInitCell = beginCell().store(storeStateInit(stateInit)).endCell()
-    const sendValue = mintParameters.deployValueAmount
+    const sendValue = toNano(mintParameters.deployValueAmount)
 
     return {
         to: jettonMinter.address,
@@ -68,18 +68,41 @@ export const getMintTransaction = async (
     }
 }
 
+const getMintBodyCell = async (deployerAddress: Address, mintParameters: MintParameters) => {
+    const mintBody = beginCell()
+        .store(
+            storeMint({
+                $$type: "Mint",
+                queryId: 0n,
+                masterMsg: {
+                    $$type: "JettonTransferInternal",
+                    queryId: 0n,
+                    amount: toNano(mintParameters.jettonMintAmount),
+                    sender: deployerAddress,
+                    responseDestination: deployerAddress,
+                    forwardTonAmount: 0n,
+                    forwardPayload: beginCell().storeUint(0, 1).asSlice(),
+                },
+                toAddress: deployerAddress,
+                tonAmount: 0n,
+            }),
+        )
+        .endCell()
+
+    return mintBody
+}
+
 export const getMintTransactionAsTonLink = async (
     deployerAddress: Address,
-    metadata: Metadata,
+    minterAddress: Address,
     mintParameters: MintParameters,
 ) => {
-    const mintTransaction = await getMintTransaction(deployerAddress, metadata, mintParameters)
+    const mintBody = await getMintBodyCell(deployerAddress, mintParameters)
+    const sendValue = toNano(mintParameters.deployValueAmount)
 
-    const tonLink = `ton://transfer/${mintTransaction.to.toString({
+    const tonLink = `ton://transfer/${minterAddress.toString({
         urlSafe: true,
-    })}?amount=${mintTransaction.value.toString()}&bin=${mintTransaction.body
-        .toBoc()
-        .toString(`base64url`)}&init=${mintTransaction.stateInitCell.toBoc().toString(`base64url`)}`
+    })}?amount=${sendValue.toString()}&bin=${mintBody.toBoc().toString(`base64url`)}`
 
     return tonLink
 }
