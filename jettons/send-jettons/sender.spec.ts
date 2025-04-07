@@ -1,8 +1,8 @@
 import "@ton/test-utils"
 import {Address, beginCell, Cell, toNano} from "@ton/core"
 import {SandboxContract, TreasuryContract, Blockchain} from "@ton/sandbox"
-import {JettonMinter, JettonUpdateContent, Mint} from "../output/Jetton_JettonMinter"
-import {JettonWallet} from "../output/Jetton_JettonWallet"
+import {JettonMinter, JettonUpdateContent, Mint} from "../output/Basic Jetton_JettonMinter"
+import {JettonWallet} from "../output/Basic Jetton_JettonWallet"
 import {JettonSender} from "../output/JettonSender_JettonSender"
 
 describe("Jetton Receiver Tests", () => {
