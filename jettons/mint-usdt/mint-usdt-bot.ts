@@ -19,6 +19,13 @@ const MINT_PARAMETERS = {
 // that allows mint for anyone, so you don't need to deploy your own jetton minter
 const MINTER_ADDRESS = Address.parse("kQBEpNQPST_mYPpfoENd2abvEDb5WJnEpXxjufNHQNN9xuQI")
 
+/*
+    This script is a bot that allows you to mint Tact USDT on testnet.
+    It shows example of how to create transaction body and pack it into QR code
+    that can be scanned by wallet applications
+
+    Fill .env file and run this script by "yarn ts-node jettons/mint-usdt/mint-usdt-bot.ts" in the terminal.
+*/
 const main = async () => {
     const botToken = process.env.BOT_TOKEN ?? "bot_token"
 

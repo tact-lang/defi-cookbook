@@ -41,7 +41,7 @@ const MINT_PARAMETERS = {
     Note: All supply will be automatically minted to your wallet.
 
     6. Run "yarn build" to compile the contract.
-    7. Run this script by "yarn deploy"
+    7. Run this script by "yarn ts-node jettons/mint-usdt/mint-usdt-terminal.ts" in the terminal.
  */
 const main = async () => {
     const mnemonics = process.env.MNEMONICS
