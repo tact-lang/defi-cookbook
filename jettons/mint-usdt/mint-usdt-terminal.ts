@@ -25,7 +25,7 @@ const JETTON_MINTER_PARAMETERS: Metadata = {
 
 const MINT_PARAMETERS = {
     jettonMintAmount: process.env.MINT_AMOUNT ?? "1000000", // 1 million TUSDT
-    deployValueAmount: process.env.VALUE ?? "0.15", // 0.15 ton
+    deployValueAmount: process.env.VALUE ?? "1.5", // 1.5 ton
 }
 
 /*
@@ -90,6 +90,13 @@ const main = async () => {
     const balance: bigint = await deployerWalletContract.getBalance()
 
     console.log("Current deployment wallet balance = ", fromNano(balance).toString(), "💎TON")
+
+    if (balance < mintTransaction.value) {
+        console.log(
+            "Not enough balance to deploy the contract. Please add some funds to your wallet.",
+        )
+        return
+    }
 
     // Send transaction to v4 wallet to the blockchain
     await deployerWalletContract.sendTransfer({
