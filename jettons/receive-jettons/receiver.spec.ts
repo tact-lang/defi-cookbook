@@ -6,13 +6,13 @@ import {
     JettonTransfer,
     JettonUpdateContent,
     Mint,
-} from "../output/Jetton_JettonMinter"
+} from "../output/Basic Jetton_JettonMinter"
 import {
     JettonNotification,
     JettonReceiver,
     storeJettonNotification,
 } from "../output/JettonReceiver_JettonReceiver"
-import {JettonWallet} from "../output/Jetton_JettonWallet"
+import {JettonWallet} from "../output/Basic Jetton_JettonWallet"
 
 describe("Jetton Receiver Tests", () => {
     let blockchain: Blockchain

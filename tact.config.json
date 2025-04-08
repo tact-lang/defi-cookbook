@@ -1,8 +1,23 @@
 {
     "projects": [
         {
-            "name": "Jetton",
-            "path": "./jettons/impl/jetton-minter.tact",
+            "name": "Basic Jetton",
+            "path": "./jettons/impl/basic/jetton-minter.tact",
+            "output": "./jettons/output",
+            "mode": "full",
+            "options": {
+                "external": false,
+                "debug": false,
+                "ipfsAbiGetter": false,
+                "interfacesGetter": false,
+                "experimental": {
+                    "inline": true
+                }
+            }
+        },
+        {
+            "name": "Governance Jetton",
+            "path": "./jettons/impl/governance/jetton-minter.tact",
             "output": "./jettons/output",
             "mode": "full",
             "options": {

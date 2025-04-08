@@ -1,4 +1,4 @@
-import "../impl/messages.tact";
+import "../impl/basic/messages.tact";
 
 /// Struct that represents Tact Jetton Wallet state init. It's used to calculate the address of the Jetton Wallet
 ///
