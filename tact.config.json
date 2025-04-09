@@ -59,6 +59,21 @@
                     "inline": true
                 }
             }
+        },
+        {
+            "name": "JettonReceiverGovernance",
+            "path": "./jettons/receive-usdt/receiver.tact",
+            "output": "./jettons/output",
+            "mode": "full",
+            "options": {
+                "external": false,
+                "debug": false,
+                "ipfsAbiGetter": false,
+                "interfacesGetter": false,
+                "experimental": {
+                    "inline": true
+                }
+            }
         }
     ]
 }

@@ -15,7 +15,7 @@ const getJettonFuncCode = () => {
     }
 }
 
-async function buildJettonMinterFromEnv(deployerAddress: Address, metadata: Metadata) {
+export async function buildJettonMinterFromEnv(deployerAddress: Address, metadata: Metadata) {
     // build cell with metadata
     const content = buildOnchainMetadata(metadata)
     const code = getJettonFuncCode()
