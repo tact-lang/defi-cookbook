@@ -15,7 +15,7 @@ const getJettonFuncCode = () => {
     }
 }
 
-export async function buildJettonMinterFromEnv(deployerAddress: Address, metadata: Metadata) {
+export async function buildJettonMinterFromMetadata(deployerAddress: Address, metadata: Metadata) {
     // build cell with metadata
     const content = buildOnchainMetadata(metadata)
     const code = getJettonFuncCode()
@@ -41,6 +41,7 @@ export async function buildJettonMinterFromEnv(deployerAddress: Address, metadat
         address: jettonMinterAddress,
         init: init,
         code: code.minterCode,
+        walletCode: code.walletCode,
     }
 }
 
@@ -55,7 +56,7 @@ export const getMintTransaction = async (
     metadata: Metadata,
     mintParameters: MintParameters,
 ) => {
-    const jettonMinter = await buildJettonMinterFromEnv(deployerAddress, metadata)
+    const jettonMinter = await buildJettonMinterFromMetadata(deployerAddress, metadata)
 
     /* 
         To get Testnet USDT we need to do two things:
