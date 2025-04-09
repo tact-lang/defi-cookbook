@@ -1,63 +1,76 @@
 import "@ton/test-utils"
 import {Address, beginCell, Cell, toNano} from "@ton/core"
 import {SandboxContract, TreasuryContract, Blockchain} from "@ton/sandbox"
-import {JettonMinter, JettonUpdateContent, Mint} from "../output/Basic Jetton_JettonMinter"
-import {JettonWallet} from "../output/Basic Jetton_JettonWallet"
-import {JettonSender} from "../output/JettonSender_JettonSender"
+import {JettonSenderGovernance} from "../output/JettonSenderGovernance_JettonSenderGovernance"
+import {JettonWalletGovernance} from "../output/Governance Jetton_JettonWalletGovernance"
+import {GovernanceJettonMinter, Mint} from "../output/Governance Jetton_GovernanceJettonMinter"
+import {Metadata} from "../mint-usdt/metadata"
+import {buildJettonMinterFromMetadata} from "../mint-usdt/mint-usdt"
 
-describe("Jetton Receiver Tests", () => {
+// helper function to deploy the USDT jetton minter
+const deployUsdtJettonMinter = async (deployer: SandboxContract<TreasuryContract>) => {
+    const metadata: Metadata = {
+        description: "Tether USD",
+        image: "https://example.com/usdt.png",
+        name: "Tether USD",
+        symbol: "USDT",
+    }
+
+    // to work with identical func usdt minter and wallet, we need to use the same code
+    // as the one used in the mainnet, hence we are using precompiled code from hex
+    const usdtMinterData = await buildJettonMinterFromMetadata(deployer.address, metadata)
+
+    const minterDeployResult = await deployer.send({
+        to: usdtMinterData.address,
+        value: toNano("0.1"),
+        body: beginCell().endCell(), // empty body
+        init: usdtMinterData.init, // init with code and data
+    })
+
+    return {
+        minterAddress: usdtMinterData.address,
+        minterDeployResult,
+        walletCode: usdtMinterData.walletCode,
+    }
+}
+
+describe("USDT Sender Tests", () => {
     let blockchain: Blockchain
 
-    let jettonMinter: SandboxContract<JettonMinter>
-    let jettonSenderContract: SandboxContract<JettonSender>
+    let usdtJettonMinter: SandboxContract<GovernanceJettonMinter>
+    let usdtSenderContract: SandboxContract<JettonSenderGovernance>
 
     let deployer: SandboxContract<TreasuryContract>
 
-    let defaultContent: Cell
     let jettonWalletCode: Cell
-    let userWallet: (address: Address) => Promise<SandboxContract<JettonWallet>>
+    let userWallet: (address: Address) => Promise<SandboxContract<JettonWalletGovernance>>
 
     beforeEach(async () => {
         blockchain = await Blockchain.create()
 
         deployer = await blockchain.treasury("deployer")
 
-        defaultContent = beginCell().endCell()
-        const msg: JettonUpdateContent = {
-            $$type: "JettonUpdateContent",
-            queryId: 0n,
-            content: new Cell(),
-        }
-
-        // deploy jetton minter
-        jettonMinter = blockchain.openContract(
-            await JettonMinter.fromInit(0n, deployer.address, defaultContent, true),
-        )
-        const deployResult = await jettonMinter.send(
-            deployer.getSender(),
-            {value: toNano("0.1")},
-            msg,
-        )
-
-        expect(deployResult.transactions).toHaveTransaction({
+        // deploy usdt jetton minter
+        const {minterAddress, minterDeployResult, walletCode} =
+            await deployUsdtJettonMinter(deployer)
+        expect(minterDeployResult.transactions).toHaveTransaction({
             from: deployer.address,
-            to: jettonMinter.address,
+            to: minterAddress,
             deploy: true,
-            success: true,
         })
+        usdtJettonMinter = blockchain.openContract(
+            GovernanceJettonMinter.fromAddress(minterAddress),
+        )
 
         // quick setup to get jetton wallet code and reuse later
-        const jettonWallet = blockchain.openContract(
-            await JettonWallet.fromInit(0n, deployer.address, jettonMinter.address),
-        )
-        jettonWalletCode = jettonWallet.init!.code
+        jettonWalletCode = walletCode
 
         // deploy jetton receiver contract
-        jettonSenderContract = blockchain.openContract(
-            await JettonSender.fromInit(jettonMinter.address, jettonWalletCode),
+        usdtSenderContract = blockchain.openContract(
+            await JettonSenderGovernance.fromInit(usdtJettonMinter.address, jettonWalletCode),
         )
 
-        const testerDeployResult = await jettonSenderContract.send(
+        const testerDeployResult = await usdtSenderContract.send(
             deployer.getSender(),
             {value: toNano("0.1")},
             null,
@@ -65,18 +78,18 @@ describe("Jetton Receiver Tests", () => {
 
         expect(testerDeployResult.transactions).toHaveTransaction({
             from: deployer.address,
-            to: jettonSenderContract.address,
+            to: usdtSenderContract.address,
             deploy: true,
             success: true,
         })
 
-        // mint jettons to sender contract address as part of the setup
+        // mint usdt to deployer address as part of the setup
         const mintMsg: Mint = {
             $$type: "Mint",
             queryId: 0n,
-            receiver: jettonSenderContract.address,
-            tonAmount: 0n,
-            mintMessage: {
+            toAddress: deployer.address,
+            tonAmount: toNano("1"),
+            masterMsg: {
                 $$type: "JettonTransferInternal",
                 queryId: 0n,
                 amount: toNano(1),
@@ -87,37 +100,39 @@ describe("Jetton Receiver Tests", () => {
             },
         }
 
-        const mintResult = await jettonMinter.send(
+        const usdtMintResult = await usdtJettonMinter.send(
             deployer.getSender(),
-            {value: toNano("0.1")},
+            {value: toNano("3")},
             mintMsg,
         )
-        expect(mintResult.transactions).toHaveTransaction({
+        expect(usdtMintResult.transactions).toHaveTransaction({
             from: deployer.address,
-            to: jettonMinter.address,
+            to: usdtJettonMinter.address,
             success: true,
             endStatus: "active",
             outMessagesCount: 1, // mint message
-            op: JettonMinter.opcodes.Mint,
+            op: GovernanceJettonMinter.opcodes.Mint,
         })
 
         userWallet = async (address: Address) => {
             return blockchain.openContract(
-                JettonWallet.fromAddress(await jettonMinter.getGetWalletAddress(address)),
+                JettonWalletGovernance.fromAddress(
+                    await usdtJettonMinter.getGetWalletAddress(address),
+                ),
             )
         }
     })
 
     // basic send, without any extra params
-    it("jetton sender should correctly send jettons in basic mode", async () => {
-        const senderContractJettonWallet = await userWallet(jettonSenderContract.address)
+    it("jetton sender should correctly send usdt in basic mode", async () => {
+        const senderContractJettonWallet = await userWallet(usdtSenderContract.address)
 
         const jettonTransferAmount = toNano(1)
         const receiverAddress = Address.parse("UQBgrsehQMikzBmR43YKE3cSYmM_GMa5Lxx92Kv8hqmuCW6L")
 
         // -(external)-> deployer -(send jettons fast)-> sender.tact --
-        // -(transfer)-> sender jetton wallet -(internal transfer)-> receiver jetton wallet
-        const jettonSendResult = await jettonSenderContract.send(
+        // -(transfer)-> sender usdt jetton wallet -(internal transfer)-> receiver usdt jetton wallet
+        const jettonSendResult = await usdtSenderContract.send(
             deployer.getSender(),
             {
                 value: toNano(2),
@@ -132,12 +147,12 @@ describe("Jetton Receiver Tests", () => {
         // message from our sender.tact to its jetton wallet
         // we need to only check that this one was send, the rest is handled by the jettons contracts
         expect(jettonSendResult.transactions).toHaveTransaction({
-            from: jettonSenderContract.address,
+            from: usdtSenderContract.address,
             to: senderContractJettonWallet.address,
             success: true,
             exitCode: 0,
             outMessagesCount: 1, // internal transfer
-            op: JettonWallet.opcodes.JettonTransfer,
+            op: JettonWalletGovernance.opcodes.JettonTransfer,
         })
 
         const receiverJettonWallet = await userWallet(receiverAddress)
@@ -148,8 +163,8 @@ describe("Jetton Receiver Tests", () => {
     })
 
     // extended send, check all the params
-    it("jetton sender should correctly send jettons in extended mode", async () => {
-        const senderContractJettonWallet = await userWallet(jettonSenderContract.address)
+    it("jetton sender should correctly send usdt in extended mode", async () => {
+        const senderContractJettonWallet = await userWallet(usdtSenderContract.address)
 
         const jettonTransferAmount = toNano(1)
 
@@ -165,8 +180,8 @@ describe("Jetton Receiver Tests", () => {
         const receiverAddress = Address.parse("UQBgrsehQMikzBmR43YKE3cSYmM_GMa5Lxx92Kv8hqmuCW6L")
 
         // -(external)-> deployer -(send jettons fast)-> sender.tact --
-        // -(transfer)-> sender jetton wallet -(internal transfer)-> receiver jetton wallet
-        const jettonExtendedSendResult = await jettonSenderContract.send(
+        // -(transfer)-> sender usdt jetton wallet -(internal transfer)-> receiver usdt jetton wallet
+        const jettonExtendedSendResult = await usdtSenderContract.send(
             deployer.getSender(),
             {
                 value: toNano(2),
@@ -182,12 +197,12 @@ describe("Jetton Receiver Tests", () => {
         )
 
         expect(jettonExtendedSendResult.transactions).toHaveTransaction({
-            from: jettonSenderContract.address,
+            from: usdtSenderContract.address,
             to: senderContractJettonWallet.address,
             success: true,
             exitCode: 0,
             outMessagesCount: 1, // internal transfer
-            op: JettonWallet.opcodes.JettonTransfer,
+            op: JettonWalletGovernance.opcodes.JettonTransfer,
         })
 
         // check that we correctly send notification message and excesses
@@ -196,7 +211,7 @@ describe("Jetton Receiver Tests", () => {
             success: true,
             exitCode: 0,
             outMessagesCount: 2, // notification + excesses
-            op: JettonSender.opcodes.JettonTransferInternal,
+            op: JettonSenderGovernance.opcodes.JettonTransferInternal,
         })
 
         const receiverJettonWallet = await userWallet(receiverAddress)

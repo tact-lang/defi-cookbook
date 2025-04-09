@@ -5,7 +5,7 @@ import {JettonMinter, JettonUpdateContent, Mint} from "../output/Basic Jetton_Je
 import {JettonWallet} from "../output/Basic Jetton_JettonWallet"
 import {JettonSender} from "../output/JettonSender_JettonSender"
 
-describe("Jetton Receiver Tests", () => {
+describe("Jetton Sender Tests", () => {
     let blockchain: Blockchain
 
     let jettonMinter: SandboxContract<JettonMinter>
