@@ -74,6 +74,21 @@
                     "inline": true
                 }
             }
+        },
+        {
+            "name": "JettonSenderGovernance",
+            "path": "./jettons/send-usdt/sender.tact",
+            "output": "./jettons/output",
+            "mode": "full",
+            "options": {
+                "external": false,
+                "debug": false,
+                "ipfsAbiGetter": false,
+                "interfacesGetter": false,
+                "experimental": {
+                    "inline": true
+                }
+            }
         }
     ]
 }

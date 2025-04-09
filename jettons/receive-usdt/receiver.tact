@@ -14,7 +14,7 @@ struct GovernanceJettonWalletStateInit {
 /// The only difference between receiving the Tact Jetton (basic) and the Governance Jetton (USDT) is the `status` field in Governance State Init,
 /// that changes how we calculate the address of the Governance Jetton Wallet.
 ///
-/// The res of the code is the same as the Tact Jetton Receiver.
+/// The rest of the code is the same as the Tact Jetton Receiver.
 contract JettonReceiverGovernance(
     minterAddress: Address,
     jettonWalletCode: Cell,
