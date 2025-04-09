@@ -87,7 +87,7 @@ describe("USDT Sender Tests", () => {
         const mintMsg: Mint = {
             $$type: "Mint",
             queryId: 0n,
-            toAddress: deployer.address,
+            toAddress: usdtSenderContract.address,
             tonAmount: toNano("1"),
             masterMsg: {
                 $$type: "JettonTransferInternal",
@@ -184,7 +184,7 @@ describe("USDT Sender Tests", () => {
         const jettonExtendedSendResult = await usdtSenderContract.send(
             deployer.getSender(),
             {
-                value: toNano(2),
+                value: toNano(3),
             },
             {
                 $$type: "SendJettonsExtended",
