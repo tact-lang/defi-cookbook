@@ -23,5 +23,6 @@ tonscan
 tonviewer
 tonweb
 TUSDT
+UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJKZ
 workchain
 yada
