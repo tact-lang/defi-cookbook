@@ -10,6 +10,8 @@ message(0xf2300ed) FetchJettonBalanceOnChain {
 }
 
 contract Fetcher(
+    // NOTE: it's not recommended to use maps like this in production,
+    // since that they could be filled to the overflow; use sharding instead
     requests: map<Address, Bool>,
     verifiedAddresses: map<Address, Address>,
     latestFetchedBalance: Int,

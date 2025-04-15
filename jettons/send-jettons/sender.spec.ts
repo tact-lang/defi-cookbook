@@ -113,7 +113,7 @@ describe("Jetton Sender Tests", () => {
         const senderContractJettonWallet = await userWallet(jettonSenderContract.address)
 
         const jettonTransferAmount = toNano(1)
-        const receiverAddress = Address.parse("UQBgrsehQMikzBmR43YKE3cSYmM_GMa5Lxx92Kv8hqmuCW6L")
+        const receiverAddress = Address.parse("UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJKZ")
 
         // -(external)-> deployer -(send jettons fast)-> sender.tact --
         // -(transfer)-> sender jetton wallet -(internal transfer)-> receiver jetton wallet
@@ -162,7 +162,7 @@ describe("Jetton Sender Tests", () => {
         // payload that could be used by the jetton wallets, usually just null
         const customPayload = beginCell().storeBit(true).endCell()
 
-        const receiverAddress = Address.parse("UQBgrsehQMikzBmR43YKE3cSYmM_GMa5Lxx92Kv8hqmuCW6L")
+        const receiverAddress = Address.parse("UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJKZ")
 
         // -(external)-> deployer -(send jettons fast)-> sender.tact --
         // -(transfer)-> sender jetton wallet -(internal transfer)-> receiver jetton wallet

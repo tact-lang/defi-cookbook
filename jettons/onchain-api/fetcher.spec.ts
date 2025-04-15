@@ -147,7 +147,7 @@ describe("Jetton Fetcher Tests", () => {
 
     it("should correctly on-chain get jetton wallet balance", async () => {
         const jettonTransferAmount = toNano(1)
-        const receiverAddress = Address.parse("UQBgrsehQMikzBmR43YKE3cSYmM_GMa5Lxx92Kv8hqmuCW6L")
+        const receiverAddress = Address.parse("UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJKZ")
 
         const deployerJettonWallet = await userWallet(deployer.address)
 
