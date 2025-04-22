@@ -10,7 +10,6 @@ This project includes a set of examples for common use cases in Tact. This inclu
 
 > If you're new to TON and Tact, please check https://docs.tact-lang.org/
 
-
 ## Structure
 
 The [jettons](./jettons/) folder consists of examples of common actions with Jettons in Tact.
