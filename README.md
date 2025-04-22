@@ -66,6 +66,7 @@ This example illustrates how to receive USDT Jettons and verify incoming transfe
 ## Contributing
 
 **If a given example is missing, please send us a PR to add it!** Our aim is to have every example available in every option. We'd also love to see more contracts involving staking, wrapped tokens, oracles, DEXs and other TEPs. Please first create an issue for all new examples
+
 ## License
 
 This project is licensed under the MIT License.
