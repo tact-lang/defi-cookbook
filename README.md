@@ -8,6 +8,9 @@ This project includes a set of examples for common use cases in Tact. This inclu
 - A TypeScript + Jest testing environment with `@ton/sandbox`.
 - Examples of off-chain and on-chain integrations with Jettons and other TEPs in the future.
 
+> If you're new to TON and Tact, please check https://docs.tact-lang.org/
+
+
 ## Structure
 
 The [jettons](./jettons/) folder consists of examples of common actions with Jettons in Tact.
