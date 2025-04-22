@@ -2,11 +2,11 @@
 
 ## Overview
 
-This project includes a set of examples for common use cases in Tact. This includes:
+This project includes a set of examples for common use cases in Tact and consists of:
 
 - Smart contracts written in the Tact language.
 - A TypeScript + Jest testing environment with `@ton/sandbox`.
-- Examples of off-chain and on-chain integrations with Jettons and other TEPs in the future.
+- Examples of off-chain and on-chain integrations with Jettons. Other TEPs are planned too.
 
 > If you're new to TON and Tact, please check https://docs.tact-lang.org/
 
