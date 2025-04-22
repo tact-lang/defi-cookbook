@@ -89,6 +89,21 @@
                     "inline": true
                 }
             }
+        },
+        {
+            "name": "JettonFetcherOnChain",
+            "path": "./jettons/onchain-api/fetcher.tact",
+            "output": "./jettons/output",
+            "mode": "full",
+            "options": {
+                "external": false,
+                "debug": false,
+                "ipfsAbiGetter": false,
+                "interfacesGetter": false,
+                "experimental": {
+                    "inline": true
+                }
+            }
         }
     ]
 }
