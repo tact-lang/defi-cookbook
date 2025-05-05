@@ -40,6 +40,25 @@ jobs:
       - name: Check spelling
         run: yarn spell:check
 
+      - name: Check broken file references in internal documentation
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: "-n -s file --exclude-path node_modules './**/*.md'"
+          output: "/dev/stdout"
+          fail: true
+          failIfEmpty: false
+
+      - name: Check broken HTTP(S) links in doc comments
+        uses: lycheeverse/lychee-action@v2
+        id: lychee_dev
+        with:
+          args: >
+            -n -s https -s http --exclude-path node_modules
+            './**/*.tact'
+          output: "/dev/stdout"
+          fail: true
+          failIfEmpty: false
+
       - name: ESLint
         run: yarn lint:es
 
