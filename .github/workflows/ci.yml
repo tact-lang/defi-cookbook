@@ -53,7 +53,7 @@ jobs:
         id: lychee_dev
         with:
           args: >
-            -n -s https -s http
+            -n -s https -s http --exclude-path node_modules
             './**/*.tact'
           output: "/dev/stdout"
           fail: true
