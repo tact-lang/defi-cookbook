@@ -1,3 +1,5 @@
 yarn lint:es
 yarn spell
 yarn fmt:check
+yarn tsc --noEmit
+yarn tact-fmt --check ./jettons

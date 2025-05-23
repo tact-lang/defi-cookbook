@@ -65,6 +65,9 @@ jobs:
       - name: Build
         run: yarn build
 
+      - name: Run Tact formatter
+        run: yarn tact-fmt --check ./jettons
+
       - name: Type check
         run: yarn tsc --noEmit
 

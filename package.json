@@ -2,12 +2,13 @@
     "private": true,
     "scripts": {
         "build": "tact --config ./tact.config.json",
-        "lint": "yarn misti ./tact.config.json",
+        "lint": "tact-fmt --check ./jettons && yarn misti ./tact.config.json",
         "lint:es": "eslint .",
         "lint:fix": "eslint . --fix",
         "test": "yarn build && jest jettons",
         "fmt": "yarn prettier -l -w .",
         "fmt:check": "yarn prettier --check .",
+        "fmt:tact": "tact-fmt --write ./jettons",
         "spell": "cspell \"**/*.{ts,js,json,md,yml}\"",
         "spell:check": "cspell --no-progress \"**/*.{ts,js,json,md,yml}\"",
         "deduplicate": "yarn yarn-deduplicate --list --fail",
@@ -15,9 +16,9 @@
     },
     "dependencies": {
         "@aws-crypto/sha256-js": "^5.2.0",
-        "@nowarp/misti": "^0.7.1",
+        "@nowarp/misti": "~0.8.0",
         "@orbs-network/ton-access": "^2.3.3",
-        "@tact-lang/compiler": "^1.6.5",
+        "@tact-lang/compiler": "^1.6.10",
         "@tact-lang/ton-jest": "^0.0.4",
         "@ton/core": "^0.60.1",
         "@ton/crypto": "^3.2.0",
@@ -59,5 +60,8 @@
         "*.{js,jsx,ts,tsx}": [
             "prettier --write"
         ]
+    },
+    "resolutions": {
+        "yaml": "^2.8.0"
     }
 }
