@@ -64,7 +64,7 @@ jobs:
 
       - name: Build
         run: yarn build
-        
+
       - name: Run Tact formatter
         run: yarn tact-fmt --check ./src
 
