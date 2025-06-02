@@ -8,16 +8,12 @@ asm fun sliceWithOneZeroBit(): Slice {
     b{0} PUSHSLICE
 }
 
-extends mutates fun resolveEitherSliceRef(self: Slice) {
-    if (self.loadBit()) {
-        let ref = self.loadRef();
-        self.endParse();
-        self = ref.asSlice();
-    }
-}
-
 extends mutates fun normalizeForwardPayload(self: JettonNotification) {
-    self.forwardPayload.resolveEitherSliceRef();
+    if (self.forwardPayload.loadBit()) {
+        let ref = self.forwardPayload.loadRef();
+        self.forwardPayload.endParse();
+        self.forwardPayload = ref.asSlice();
+    }
 }
 
 trait UseJetton {
