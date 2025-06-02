@@ -1,9 +1,12 @@
-import "../impl/basic/messages";
-import "./tep-89-proofer";
+import "./tep-89-discovery-proxy";
 
 // CALLCC resets c0 and c1 to default quit-cont (extraordinary continuation),
 // so after implicit RET we will call quit-cont
 asm fun exit() { <{ }> PUSHCONT CALLCC }
+
+asm fun sliceWithOneZeroBit(): Slice {
+    b{0} PUSHSLICE
+}
 
 extends mutates fun resolveEitherSliceRef(self: Slice) {
     if (self.loadBit()) {
@@ -26,11 +29,12 @@ trait UseJetton {
             let action = inMsg().asCell();
             // This function proofs that jetton wallet is valid
             // This function throws if proof is invalid
-            let prooferStateInit = initOf TEP89Proofer(
+            let prooferStateInit = initOf TEP89DiscoveryProxy(
                 self.jettonMaster,
                 myAddress(),
                 sender(),
                 action,
+                curLt(),
             );
 
             deploy(DeployParameters {
@@ -39,31 +43,65 @@ trait UseJetton {
                 // Doesn't really matter, so just for consistency - all internal protocol messages are not bounceable
                 bounce: false,
                 init: prooferStateInit,
-                body: TEP89ProofRequest {
-                    jettonMaster: self.jettonMaster,
-                    possibleJettonWallet: sender(),
-                    action,
-                }.toCell(),
             });
             // We don't need to save state init, so we just need to exit() quickly
             exit();
         }
 
-        require(sender() == self.jettonWallet, "JettonVault: Sender must be jetton wallet");
+        // Maybe someone messed up with address, so let's try to send jettons back
+        if (sender() != self.jettonWallet) {
+            message(MessageParameters {
+                mode: SendRemainingValue | SendIgnoreErrors,
+                body: JettonTransfer {
+                    queryId: msg.queryId,
+                    amount: msg.amount,
+                    destination: msg.sender,
+                    responseDestination: msg.sender,
+                    customPayload: null,
+                    forwardTonAmount: 1,
+                    forwardPayload: sliceWithOneZeroBit(),
+                }.toCell(),
+                value: 0,
+                to: sender(),
+                bounce: true,
+            });
+            commit();
+            require(false, "UseJetton: Sender must be jetton wallet");
+        }
 
         msg.normalizeForwardPayload();
         self.receiveJettonHandler(msg);
     }
 
-    // We will receive this message only if TEP-89 proofer will successfully validate jettonWallet
-    receive(msg: TEP89ProofResponse) {
-        let prooferStateInit = initOf TEP89Proofer(self.jettonMaster, myAddress(), msg.proofedJettonWallet, msg.action);
-        require(prooferStateInit.hasSameBasechainAddress(sender()), "JettonVault: Sender must be a valid proofer");
-        self.jettonWallet = msg.proofedJettonWallet;
+    receive(msg: TEP89DiscoveryResult) {
+        let proxyStateInit = initOf TEP89DiscoveryProxy(self.jettonMaster, myAddress(), msg.expectedJettonWallet, msg.action, msg.discoveryId);
+        require(proxyStateInit.hasSameBasechainAddress(sender()), "UseJetton: Sender must be a valid TEP-89 proxy");
 
         let jettonNotification = JettonNotification.fromCell(msg.action);
         jettonNotification.normalizeForwardPayload();
-        self.receiveJettonHandler(jettonNotification);
+
+        if (msg.expectedJettonWallet == msg.actualJettonWallet) {
+            self.jettonWallet = msg.actualJettonWallet;
+            self.receiveJettonHandler(jettonNotification);
+        } else {
+            message(MessageParameters {
+                mode: SendRemainingValue | SendIgnoreErrors,
+                body: JettonTransfer {
+                    queryId: jettonNotification.queryId,
+                    amount: jettonNotification.amount,
+                    destination: jettonNotification.sender,
+                    responseDestination: jettonNotification.sender,
+                    customPayload: null,
+                    forwardTonAmount: 1,
+                    forwardPayload: sliceWithOneZeroBit(),
+                }.toCell(),
+                value: 0,
+                to: msg.expectedJettonWallet,
+                bounce: true,
+            });
+            commit();
+            require(false, "UseJetton: Expected and Actual wallets are not equal");
+        }
     }
 
     get fun jettonWalletInited(): Bool {
