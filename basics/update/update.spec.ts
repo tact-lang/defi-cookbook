@@ -15,7 +15,7 @@ describe("Update contract tests", () => {
 
         // deploy initial contract
         // and increase counter value to 1
-        const firstActionres = await initialCounterContract.send(
+        const firstActionRes = await initialCounterContract.send(
             deployer.getSender(),
             {value: toNano("0.1")},
             {
@@ -23,7 +23,7 @@ describe("Update contract tests", () => {
             },
         )
 
-        expect(firstActionres.transactions).toHaveTransaction({
+        expect(firstActionRes.transactions).toHaveTransaction({
             from: deployer.address,
             to: initialCounterContract.address,
             deploy: true,

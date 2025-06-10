@@ -2,7 +2,7 @@
 
 In this example we will use TON contract update functionality to modify the logic of already deployed contract.
 
-1. We will deploy the initail counter contract:
+1. We will deploy the initial counter contract:
 
 ```tact
 contract CounterBeforeUpdate(
@@ -73,7 +73,7 @@ const updateResult = await initialCounterContract.send(
 )
 ```
 
-4. Now we neeed to verify the update result and find a way to interact with a new contract.
+4. Now we need to verify the update result and find a way to interact with a new contract.
 
 ```ts
 const counterContractStateAfterUpdate = await blockchain
