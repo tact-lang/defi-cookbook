@@ -43,7 +43,7 @@ contract CounterAfterUpdate(
 }
 ```
 
-This contract has only one field, integer `data` variable. Also, this contract *decreases* counter variable upon receiving the same `CounterAction` message.
+This contract has only one field, integer `data` variable. Also, this contract _decreases_ counter variable upon receiving the same `CounterAction` message.
 
 3. Now we want to use `UpdateContractRequest` message on deployed contract to update its code and data. Message itself looks like this:
 
@@ -96,8 +96,8 @@ And to interact with updated contract we can again use newly generated wrapper:
 
 ```ts
 const updatedCounterContract = blockchain.openContract(
-            CounterAfterUpdate.fromAddress(initialCounterContract.address),
-        )
+    CounterAfterUpdate.fromAddress(initialCounterContract.address),
+)
 
 // now this action will decrease counter, since we've updated contract code
 await updatedCounterContract.send(
