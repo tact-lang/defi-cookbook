@@ -17,6 +17,7 @@
         "package.json",
         "yarn.lock",
         "jettons/output/**",
+        "basics/output/**",
         "tsconfig.json"
     ]
 }
