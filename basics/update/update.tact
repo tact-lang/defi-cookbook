@@ -20,6 +20,7 @@ contract CounterBeforeUpdate(
         require(sender() == self.updateAuthority, "Incorrect update authority");
         setData(msg.data);
         setCode(msg.code);
+        exit();
     }
 
     get fun data(): Int {
@@ -52,3 +53,6 @@ asm fun setData(newData: Cell) {
 asm fun setCode(newCode: Cell) {
     SETCODE
 }
+
+// helper function, stops the execution
+asm fun exit() {RET}
