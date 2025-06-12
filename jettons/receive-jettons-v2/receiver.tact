@@ -5,7 +5,6 @@ contract JettonReceiver(
     // variables for UseJetton trait
     jettonMaster: Address,
     jettonWallet: Address?, // should be null during deploy
-    //
     amountChecker: Int as coins,
     payloadChecker: Slice,
 ) with UseJetton {
