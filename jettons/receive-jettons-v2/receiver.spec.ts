@@ -14,7 +14,7 @@ import {
 } from "../output/JettonReceiverV2_JettonReceiver"
 import {JettonWallet} from "../output/Basic Jetton_JettonWallet"
 
-describe("Jetton Receiver Tests", () => {
+describe("Jetton Receiver with trait and discovery Tests", () => {
     let blockchain: Blockchain
 
     let jettonMinter: SandboxContract<JettonMinter>
