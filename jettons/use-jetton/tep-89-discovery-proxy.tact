@@ -50,7 +50,7 @@ message(0x7a1267fd) TEP89DiscoveryResult {
 /// The contract automatically self-destructs after delivering results, preventing
 /// storage rent accumulation.
 ///
-/// Reference: https://github.com/ton-blockchain/TEPs/blob/master/text/0089-jetton-standard.md
+/// Reference: https://github.com/ton-blockchain/TEPs/blob/master/text/0089-jetton-wallet-discovery.md
 contract TEP89DiscoveryProxy(
     jettonMaster: Address,
     discoveryRequester: Address,
