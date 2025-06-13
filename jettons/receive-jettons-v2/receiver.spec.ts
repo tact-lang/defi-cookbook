@@ -1,4 +1,3 @@
-import "@ton/test-utils"
 import {Address, beginCell, Cell, toNano} from "@ton/core"
 import {SandboxContract, TreasuryContract, Blockchain} from "@ton/sandbox"
 import {
@@ -13,6 +12,8 @@ import {
     storeJettonNotification,
 } from "../output/JettonReceiverV2_JettonReceiver"
 import {JettonWallet} from "../output/Basic Jetton_JettonWallet"
+import {TEP89DiscoveryProxy} from "../output/JettonReceiverV2_TEP89DiscoveryProxy"
+import {findTransactionRequired} from "@ton/test-utils"
 
 describe("Jetton Receiver with trait and discovery Tests", () => {
     let blockchain: Blockchain
@@ -31,48 +32,48 @@ describe("Jetton Receiver with trait and discovery Tests", () => {
         deployer = await blockchain.treasury("deployer")
 
         defaultContent = beginCell().endCell()
-        const msg: JettonUpdateContent = {
+        const updateContentMsg: JettonUpdateContent = {
             $$type: "JettonUpdateContent",
             queryId: 0n,
             content: new Cell(),
         }
 
-        // deploy jetton minter
+        // Deploy jetton minter contract
         jettonMinter = blockchain.openContract(
             await JettonMinter.fromInit(0n, deployer.address, defaultContent, true),
         )
-        const deployResult = await jettonMinter.send(
+        const minterDeployResult = await jettonMinter.send(
             deployer.getSender(),
             {value: toNano("0.1")},
-            msg,
+            updateContentMsg,
         )
 
-        expect(deployResult.transactions).toHaveTransaction({
+        expect(minterDeployResult.transactions).toHaveTransaction({
             from: deployer.address,
             to: jettonMinter.address,
             deploy: true,
             success: true,
         })
 
-        // deploy jetton receiver contract
+        // Deploy jetton receiver contract with jettonWallet = null (required for discovery)
         jettonReceiverContract = blockchain.openContract(
             await JettonReceiver.fromInit(jettonMinter.address, null, 0n, beginCell().asSlice()),
         )
 
-        const testerDeployResult = await jettonReceiverContract.send(
+        const receiverDeployResult = await jettonReceiverContract.send(
             deployer.getSender(),
             {value: toNano("0.1")},
             null,
         )
 
-        expect(testerDeployResult.transactions).toHaveTransaction({
+        expect(receiverDeployResult.transactions).toHaveTransaction({
             from: deployer.address,
             to: jettonReceiverContract.address,
             deploy: true,
             success: true,
         })
 
-        // mint jettons to deployer address as part of the setup
+        // Mint jettons to deployer for testing transfers
         const mintMsg: Mint = {
             $$type: "Mint",
             queryId: 0n,
@@ -99,7 +100,7 @@ describe("Jetton Receiver with trait and discovery Tests", () => {
             to: jettonMinter.address,
             success: true,
             endStatus: "active",
-            outMessagesCount: 1, // mint message
+            outMessagesCount: 1, // JettonTransferInternal to deployer's wallet
             op: JettonMinter.opcodes.Mint,
         })
 
@@ -110,29 +111,28 @@ describe("Jetton Receiver with trait and discovery Tests", () => {
         }
     })
 
-    it("jetton receiver should accept correct transfer notification", async () => {
+    it("should complete TEP-89 discovery flow", async () => {
         const deployerJettonWallet = await userWallet(deployer.address)
         const receiverJettonWallet = await userWallet(jettonReceiverContract.address)
 
-        const jettonTransferAmount = toNano(1)
-        const jettonTransferForwardPayload = beginCell().storeUint(239, 32).endCell()
+        const transferAmount = toNano(1)
+        const forwardPayload = beginCell().storeUint(239, 17).endCell()
+
         const transferMsg: JettonTransfer = {
             $$type: "JettonTransfer",
             queryId: 0n,
-            amount: jettonTransferAmount,
+            amount: transferAmount,
             responseDestination: deployer.address,
             forwardTonAmount: toNano(1),
             forwardPayload: beginCell()
-                .storeBit(false)
-                .storeSlice(jettonTransferForwardPayload.asSlice())
+                .storeBit(false) // Inline format
+                .storeSlice(forwardPayload.asSlice())
                 .endCell()
                 .asSlice(),
             destination: jettonReceiverContract.address,
             customPayload: null,
         }
 
-        // -(external)-> deployer -(transfer)-> deployer jetton wallet --
-        // -(internal transfer)-> receiver jetton wallet -(transfer notification)-> receiver.tact
         const transferResult = await deployerJettonWallet.send(
             deployer.getSender(),
             {
@@ -141,59 +141,178 @@ describe("Jetton Receiver with trait and discovery Tests", () => {
             transferMsg,
         )
 
-        // check that jetton transfer was successful
-        // and notification message was sent to receiver contract
+        // Step 1: JettonTransferInternal to receiver's jetton wallet (auto-deployed)
         expect(transferResult.transactions).toHaveTransaction({
             from: deployerJettonWallet.address,
             to: receiverJettonWallet.address,
             success: true,
             exitCode: 0,
-            outMessagesCount: 2, // notification + excesses
+            outMessagesCount: 2, // JettonNotification + JettonExcesses
             op: JettonWallet.opcodes.JettonTransferInternal,
             deploy: true,
         })
 
-        // notification message to receiver.tact contract, handled by our receiver contract logic
-        expect(transferResult.transactions).toHaveTransaction({
+        // Step 2: JettonNotification triggers TEP-89 discovery (jettonWallet is null)
+        const notificationTx = findTransactionRequired(transferResult.transactions, {
             from: receiverJettonWallet.address,
             to: jettonReceiverContract.address,
             success: true,
             exitCode: 0,
-            outMessagesCount: 1, // send message to tep-89 proofer
+            outMessagesCount: 1, // Deploy TEP89DiscoveryProxy
             op: JettonWallet.opcodes.JettonNotification,
         })
 
-        // getters to ensure we successfully received notification and executed overridden fetch method
-        const getAmount = await jettonReceiverContract.getAmountChecker()
-        expect(getAmount).toEqual(jettonTransferAmount)
+        // Calculate expected proxy address based on discovery parameters
+        const discoveryProxyContract = await TEP89DiscoveryProxy.fromInit(
+            jettonMinter.address, // jettonMaster
+            jettonReceiverContract.address, // discoveryRequester
+            receiverJettonWallet.address, // expectedJettonWallet
+            notificationTx.inMessage!.body!, // original JettonNotification as action
+            notificationTx.lt, // discoveryId (logical time)
+        )
+        const proxyAddress = discoveryProxyContract.address
 
-        const getPayload = await jettonReceiverContract.getPayloadChecker()
-        expect(getPayload).toEqualSlice(jettonTransferForwardPayload.asSlice())
+        // Step 3: TEP89DiscoveryProxy deployment by receiver contract
+        expect(transferResult.transactions).toHaveTransaction({
+            from: jettonReceiverContract.address,
+            to: proxyAddress,
+            success: true,
+            exitCode: 0,
+            outMessagesCount: 1, // ProvideWalletAddress to JettonMaster
+            deploy: true,
+        })
+
+        // Step 4: Proxy requests wallet address from jetton master
+        expect(transferResult.transactions).toHaveTransaction({
+            from: proxyAddress,
+            to: jettonMinter.address,
+            success: true,
+            exitCode: 0,
+            outMessagesCount: 1, // TakeWalletAddress response
+            op: JettonMinter.opcodes.ProvideWalletAddress,
+        })
+
+        // Step 5: Jetton master responds with wallet address
+        expect(transferResult.transactions).toHaveTransaction({
+            from: jettonMinter.address,
+            to: proxyAddress,
+            success: true,
+            exitCode: 0,
+            outMessagesCount: 1, // TEP89DiscoveryResult to receiver
+            op: JettonMinter.opcodes.TakeWalletAddress,
+        })
+
+        // Step 6: Proxy sends discovery result back to receiver contract
+        expect(transferResult.transactions).toHaveTransaction({
+            from: proxyAddress,
+            to: jettonReceiverContract.address,
+            success: true,
+            exitCode: 0,
+            op: JettonReceiver.opcodes.TEP89DiscoveryResult,
+        })
+
+        // Verify receiver contract processed the transfer successfully
+        const finalAmount = await jettonReceiverContract.getAmountChecker()
+        expect(finalAmount).toEqual(transferAmount)
+
+        const finalPayload = await jettonReceiverContract.getPayloadChecker()
+        expect(finalPayload).toEqualSlice(forwardPayload.asSlice())
     })
 
-    it("jetton receiver should reject malicious transfer notification", async () => {
-        // try to send malicious notification message
-        const msg: JettonNotification = {
+    it("should reject malicious direct JettonNotification and refund tokens", async () => {
+        // Attempt to send JettonNotification directly (bypassing jetton wallet)
+        const maliciousNotification: JettonNotification = {
             $$type: "JettonNotification",
             queryId: 0n,
             amount: toNano(1),
-            forwardPayload: beginCell().storeUint(239, 32).asSlice(),
+            forwardPayload: beginCell().storeUint(239, 17).asSlice(),
             sender: deployer.address,
         }
 
-        const msgCell = beginCell().store(storeJettonNotification(msg)).endCell()
+        const notificationCell = beginCell()
+            .store(storeJettonNotification(maliciousNotification))
+            .endCell()
 
-        // no actual jetton transfer, just send notification message
-        await deployer.send({
+        // Send malicious notification directly from deployer (not from jetton wallet)
+        const maliciousResult = await deployer.send({
             to: jettonReceiverContract.address,
             value: toNano(1),
-            body: msgCell,
+            body: notificationCell,
         })
 
-        const getAmount = await jettonReceiverContract.getAmountChecker()
-        expect(getAmount).toEqual(0n)
+        // Step 1: JettonNotification triggers TEP-89 discovery (malicious attempt)
+        const notificationTx = findTransactionRequired(maliciousResult.transactions, {
+            to: jettonReceiverContract.address,
+            success: true,
+            exitCode: 0,
+            outMessagesCount: 1, // Deploy TEP89DiscoveryProxy
+            op: JettonWallet.opcodes.JettonNotification,
+        })
 
-        const getPayload = await jettonReceiverContract.getPayloadChecker()
-        expect(getPayload).toEqualSlice(beginCell().asSlice())
+        // Calculate expected proxy address based on discovery parameters
+        const discoveryProxyContract = await TEP89DiscoveryProxy.fromInit(
+            jettonMinter.address, // jettonMaster
+            jettonReceiverContract.address, // discoveryRequester
+            deployer.address, // expectedJettonWallet (sender from notification)
+            notificationTx.inMessage!.body!, // malicious notification as action
+            notificationTx.lt, // discoveryId
+        )
+        const proxyAddress = discoveryProxyContract.address
+
+        // Step 2: TEP89DiscoveryProxy deployment by receiver contract
+        expect(maliciousResult.transactions).toHaveTransaction({
+            from: jettonReceiverContract.address,
+            to: proxyAddress,
+            success: true,
+            exitCode: 0,
+            outMessagesCount: 1, // ProvideWalletAddress to JettonMaster
+            deploy: true,
+        })
+
+        // Step 3: Proxy requests wallet address from jetton master
+        expect(maliciousResult.transactions).toHaveTransaction({
+            from: proxyAddress,
+            to: jettonMinter.address,
+            success: true,
+            exitCode: 0,
+            outMessagesCount: 1, // TakeWalletAddress response
+            op: JettonMinter.opcodes.ProvideWalletAddress,
+        })
+
+        // Step 4: Jetton master responds with wallet address
+        expect(maliciousResult.transactions).toHaveTransaction({
+            from: jettonMinter.address,
+            to: proxyAddress,
+            success: true,
+            exitCode: 0,
+            outMessagesCount: 1, // TEP89DiscoveryResult to receiver
+            op: JettonMinter.opcodes.TakeWalletAddress,
+        })
+
+        // Step 5: Proxy sends discovery result back to receiver contract (mismatch detected)
+        expect(maliciousResult.transactions).toHaveTransaction({
+            from: proxyAddress,
+            to: jettonReceiverContract.address,
+            success: true,
+            exitCode: 0,
+            op: JettonReceiver.opcodes.TEP89DiscoveryResult,
+            outMessagesCount: 1, // Refund transfer
+        })
+
+        // Step 6: Receiver contract refunds tokens to malicious sender
+        expect(maliciousResult.transactions).toHaveTransaction({
+            from: jettonReceiverContract.address,
+            to: deployer.address,
+            success: true,
+            exitCode: 0,
+            op: JettonWallet.opcodes.JettonTransfer,
+        })
+
+        // Verify malicious transfer was rejected (no state changes)
+        const finalAmount = await jettonReceiverContract.getAmountChecker()
+        expect(finalAmount).toEqual(0n)
+
+        const finalPayload = await jettonReceiverContract.getPayloadChecker()
+        expect(finalPayload).toEqualSlice(beginCell().asSlice())
     })
 })
