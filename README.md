@@ -72,6 +72,18 @@ This example focuses on sending USDT (Governance) Jettons. It is very much like 
 
 This example illustrates how to receive USDT Jettons and verify incoming transfer notifications. It is tailored for governance Jettons and includes logic for handling governance-specific state initialization.
 
+### Use Jetton Trait
+
+[UseJetton Trait for safe jetton integration](./jettons/use-jetton/)
+
+This example provides a reusable Tact trait that enables contracts to receive jetton transfers without requiring custom implementation of the TEP-89 wallet discovery protocol. The trait provides automatic wallet discovery, transfer validation, and security features including automatic refunds for unauthorized transfers.
+
+### Receive Jettons v2
+
+[Advanced jetton receiver using UseJetton trait](./jettons/receive-jettons-v2/)
+
+This example demonstrates how to integrate the `UseJetton` trait to create a contract that can receive jetton transfers in a safe and standards-compliant manner.
+
 </details>
 
 ## Contributing

@@ -106,6 +106,21 @@
             }
         },
         {
+            "name": "JettonReceiverV2",
+            "path": "./jettons/receive-jettons-v2/receiver.tact",
+            "output": "./jettons/output",
+            "mode": "full",
+            "options": {
+                "external": false,
+                "debug": false,
+                "ipfsAbiGetter": false,
+                "interfacesGetter": false,
+                "experimental": {
+                    "inline": true
+                }
+            }
+        },
+        {
             "name": "UpdateContract",
             "path": "./basics/update/update.tact",
             "output": "./basics/output",
