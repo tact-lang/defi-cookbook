@@ -315,4 +315,37 @@ describe("Jetton Receiver with trait and discovery Tests", () => {
         const finalPayload = await jettonReceiverContract.getPayloadChecker()
         expect(finalPayload).toEqualSlice(beginCell().asSlice())
     })
+
+    it("should reject fake TEP89DiscoveryResult message", async () => {
+        // Create a fake TEP89DiscoveryResult message
+        const fakeDiscoveryResult = beginCell()
+            .storeUint(JettonReceiver.opcodes.TEP89DiscoveryResult, 32)
+            .storeUint(0n, 64)
+            .storeAddress(null)
+            .storeAddress(null)
+            .storeRef(beginCell().endCell())
+            .endCell()
+
+        // Send fake message from deployer (not from a valid TEP-89 proxy)
+        const fakeResult = await deployer.send({
+            to: jettonReceiverContract.address,
+            value: toNano(1),
+            body: fakeDiscoveryResult,
+        })
+
+        // Verify the transaction failed with the expected error
+        expect(fakeResult.transactions).toHaveTransaction({
+            from: deployer.address,
+            to: jettonReceiverContract.address,
+            success: false,
+            exitCode: JettonReceiver.errors["UseJetton: Sender must be a valid TEP-89 proxy"],
+        })
+
+        // Verify no state changes occurred
+        const finalAmount = await jettonReceiverContract.getAmountChecker()
+        expect(finalAmount).toEqual(0n)
+
+        const finalPayload = await jettonReceiverContract.getPayloadChecker()
+        expect(finalPayload).toEqualSlice(beginCell().asSlice())
+    })
 })
