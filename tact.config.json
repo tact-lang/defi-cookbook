@@ -119,6 +119,21 @@
                     "inline": true
                 }
             }
+        },
+        {
+            "name": "UpdateContract",
+            "path": "./basics/update/update.tact",
+            "output": "./basics/output",
+            "mode": "full",
+            "options": {
+                "external": false,
+                "debug": false,
+                "ipfsAbiGetter": false,
+                "interfacesGetter": false,
+                "experimental": {
+                    "inline": true
+                }
+            }
         }
     ]
 }

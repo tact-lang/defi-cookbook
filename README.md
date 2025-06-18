@@ -23,6 +23,17 @@ Each folder inside it includes examples for one or more of the following:
 ## Examples
 
 <details>
+  <summary>Basics</summary>
+
+### Update contract
+
+[Update already deployed contract](./basics/update/)
+
+These examples demonstrate how to update already deployed contract code and data. Note that this operation can permanently lock all funds present on the account if done incorrectly, so all production updates should be tested in the testnet first.
+
+</details>
+
+<details>
   <summary>Jettons</summary>
 
 ### Receive Jettons
