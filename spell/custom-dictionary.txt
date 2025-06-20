@@ -26,3 +26,8 @@ TUSDT
 UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJKZ
 workchain
 yada
+dont
+Merkle
+smartweave
+ethersproject
+hexlify

@@ -119,6 +119,36 @@
                     "inline": true
                 }
             }
+        },
+        {
+            "name": "SingleFeedMan",
+            "path": "./oracles/redstone/single-feed-man/single-feed-man.tact",
+            "output": "./oracles/output",
+            "mode": "full",
+            "options": {
+                "external": false,
+                "debug": false,
+                "ipfsAbiGetter": false,
+                "interfacesGetter": false,
+                "experimental": {
+                    "inline": true
+                }
+            }
+        },
+        {
+            "name": "SampleConsumer",
+            "path": "./oracles/redstone/sample-consumer/sample-consumer.tact",
+            "output": "./oracles/output",
+            "mode": "full",
+            "options": {
+                "external": false,
+                "debug": false,
+                "ipfsAbiGetter": false,
+                "interfacesGetter": false,
+                "experimental": {
+                    "inline": true
+                }
+            }
         }
     ]
 }
