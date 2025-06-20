@@ -133,8 +133,8 @@ const MAX_DELAY_SECONDS: Int = 900; // 15 * 60
 const MAX_AHEAD_SECONDS: Int = 180; // 3 * 60
 
 extends inline fun loadDataPackage(self: Slice): DataPackageStruct {
-    // эта функция оооочень сильно отличается от FunC, т.к. данные лежат совсем по-другому
-    // не уверен, что код на FunC вообще рабочий
+    // this function is veeery different from FunC because the data is arranged completely differently
+    // not sure if the FunC code even works
     // fffffffffffffffffffffff
     // read package meta
     let tail = self.lastBits(DP_COUNT_BITS + DP_VALUE_BYTE_SIZE_BITS + TIMESTAMP_BITS);
