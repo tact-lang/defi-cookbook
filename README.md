@@ -1,3 +1,7 @@
+> [!CAUTION]
+> This project is deprecated. For up-to-date version of smart contract examples visit
+> the [Contract Monorepo in Tolk](https://github.com/ton-blockchain/acton-contracts/).
+
 # Examples in Tact
 
 ## Overview
